@@ -86,12 +86,26 @@ class MainActivity : AppCompatActivity() {
     fun deneme(it: Bitmap) {
         Log.d("winter", it.width.toString())
         binding.ImageView.setImageBitmap(it)
-        val offset = 1;
+        var blackWhite = true;
+        val offset = 2;
+        // array size = (offset*2)+1
         val kernel = floatArrayOf(
-            -1.0f, -1.0f, -1.0f,
-            -1.0f, 8.0f, -1.0f,
-            -1.0f, -1.0f, -1.0f
+            -1.0f, -2.0f, -4.0f, -2.0f, -1.0f,
+            -2.0f, -4.0f, -8.0f, -4.0f, -2.0f,
+             0.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+             1.0f,  2.0f,  4.0f,  2.0f,  1.0f,
+             2.0f,  4.0f,  8.0f,  4.0f,  2.0f
         )
+        //val kernel = floatArrayOf(
+        //    -1.0f, -1.0f, -1.0f,
+        //    -1.0f, 8.0f, -1.0f,
+        //    -1.0f, -1.0f, -1.0f
+        //)
+        //val kernel = floatArrayOf(
+        //    1.0f / 9.0f, 1.0f / 9.0f, 1.0f / 9.0f,
+        //    1.0f / 9.0f, 1.0f / 9.0f, 1.0f / 9.0f,
+        //    1.0f / 9.0f, 1.0f / 9.0f, 1.0f / 9.0f
+        //)
 
         val width: Int = it.width
         val height: Int = it.height
@@ -125,11 +139,17 @@ class MainActivity : AppCompatActivity() {
                             val red = resultPixel and 0x00ff0000 shr 16;
                             val green = resultPixel and 0x0000ff00 shr 8;
                             val blue = resultPixel and 0x000000ff;
+                            if(blackWhite) {
+                                var grey = (0.2126 * red + 0.7152 * green + 0.0722 * blue).toInt();
+                                red = grey;
+                                green = grey;
+                                blue = grey;
+                            }
                             var karnelIndex =
                                 (mi + offset) * ((offset * 2) + 1) + (mj + offset)
-                            resultP[0] = (red * kernel[karnelIndex]).toInt();
-                            resultP[1] = (green * kernel[karnelIndex]).toInt();
-                            resultP[2] = (blue * kernel[karnelIndex]).toInt();
+                            resultP[0] += (red * kernel[karnelIndex]).toInt();
+                            resultP[1] += (green * kernel[karnelIndex]).toInt();
+                            resultP[2] += (blue * kernel[karnelIndex]).toInt();
                         }
                     }
                     for (k in resultP.indices) {
