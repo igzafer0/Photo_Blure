@@ -77,6 +77,8 @@ class MainActivity : AppCompatActivity() {
                                     val blue = resultPixel and 0x000000ff;
                                     var karnelIndex = (mi+offset)*((offset*2)+1)+(mj+offset)
                                     resultP[0] = (red * kernel[karnelIndex]).toInt();
+                                    resultP[1] = (green * kernel[karnelIndex]).toInt();
+                                    resultP[2] = (blue * kernel[karnelIndex]).toInt();
                                 }
                             }
                             for (k in 0 until resultP.size) {
