@@ -36,11 +36,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(view)
         viewModel = ViewModelProvider(this)[HomeViewModel::class.java]
 
-        viewModel.currentBitmap.observe(this, Observer { it ->
-            binding.ImageView.setImageBitmap(it)
-            //burayı sen ekle üsendim
+        viewModel.currentBitmap.observe(this) {
 
-        })
+
+        }
+
         binding.takePicture.setOnClickListener {
             if (ContextCompat.checkSelfPermission(
                     this,
@@ -83,13 +83,85 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun deneme(it: Bitmap) {
+        Log.d("winter", it.width.toString())
+        binding.ImageView.setImageBitmap(it)
+        val offset = 1;
+        val kernel = floatArrayOf(
+            -1.0f, -1.0f, -1.0f,
+            -1.0f, 8.0f, -1.0f,
+            -1.0f, -1.0f, -1.0f
+        )
+
+        val width: Int = it.width
+        val height: Int = it.height
+        val pixels = IntArray(width * height)
+        val newPixels = IntArray(width * height)
+        it.getPixels(pixels, 0, width, 0, 0, width, height);
+        for (i in 0 until width * height) {
+            newPixels[i] = 0;
+        }
+        CoroutineScope(Dispatchers.Default).launch {
+
+            for (i in offset until width - offset) {
+                for (j in offset until height - offset) {
+                    var resultP = IntArray(3);
+                    resultP[0] = 0;//red
+                    resultP[1] = 0;//green
+                    resultP[2] = 0;//blue
+                    for (mi in (-offset)..(offset)) {
+                        for (mj in (-offset)..(offset)) {
+
+
+                            val resultPixel = pixels[(i + mi) * width + (j + mj)]
+                            // int değeri 4 byte yer kaplar
+                            // rgba daki her bir değer (red) 1byte yer kaplar
+                            // yani 1 int in içine 0-255 e kadar olan rgba değerleri atanabilir
+                            // bu int in içinde sadece r(red) yi almak istersek 3. byte hariç tüm bitleri sıfırlamamız
+                            // sonra 3. byte nin 1. byte nin yerine kadar kaydırmamız gerekir
+                            // *Pixel and 0x00ff0000* 3. byte hariç dier byte leri sıfırlar
+                            // *shr 16* 16 bit(2 byte) sağ doğru kaydırı
+
+                            val red = resultPixel and 0x00ff0000 shr 16;
+                            val green = resultPixel and 0x0000ff00 shr 8;
+                            val blue = resultPixel and 0x000000ff;
+                            var karnelIndex =
+                                (mi + offset) * ((offset * 2) + 1) + (mj + offset)
+                            resultP[0] = (red * kernel[karnelIndex]).toInt();
+                            resultP[1] = (green * kernel[karnelIndex]).toInt();
+                            resultP[2] = (blue * kernel[karnelIndex]).toInt();
+                        }
+                    }
+                    for (k in resultP.indices) {
+                        if (resultP[k] < 0) resultP[k] = 0;
+                        if (resultP[k] > 255) resultP[k] = 255;
+                    }
+                    var rgbToInt: Int = 255 shl 24;
+                    rgbToInt += resultP[0] shl 16;
+                    rgbToInt += resultP[1] shl 8;
+                    rgbToInt += resultP[2];
+                    newPixels[i * width + j] = rgbToInt;
+                }
+            }
+            CoroutineScope(Dispatchers.Main).launch {
+                val newBmp = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+                newBmp.setPixels(newPixels, 0, width, 0, 0, width, height)
+                binding.ImageView.setImageBitmap(newBmp)
+            }
+        }
+
+    }
+
     private var currentPhotoPath: String = ""
     private val startForResult =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val options = BitmapFactory.Options()
                 val imageBitmap = BitmapFactory.decodeFile(currentPhotoPath, options)
-                viewModel.currentBitmap.value = imageBitmap
+                if (imageBitmap != null) {
+                    deneme(imageBitmap)
+                }
+
             }
         }
 
